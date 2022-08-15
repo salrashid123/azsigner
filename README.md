@@ -66,9 +66,28 @@ const (
 func main() {
 
 	ctx := context.Background()
+	// demo signer
 	r, err := salpem.NewPEMCrypto(&salpem.PEM{
 		PrivatePEMFile: "../certs/client_rsa.key",
 	})
+
+	// // rsa.PrivateKey also implements a crypto.Signer
+	// // https://pkg.go.dev/crypto/rsa#PrivateKey.Sign
+	// privatePEM, err := ioutil.ReadFile("../certs/client_rsa.key")
+	// if err != nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
+	// rblock, _ := pem.Decode(privatePEM)
+	// if rblock == nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
+	// r, err := x509.ParsePKCS1PrivateKey(rblock.Bytes)
+	// if err != nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
 
 	// ############# KMS
 

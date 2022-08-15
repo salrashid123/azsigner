@@ -41,6 +41,24 @@ func main() {
 		PrivatePEMFile: "../certs/client_rsa.key",
 	})
 
+	// // rsa.PrivateKey also implements a crypto.Signer
+	// // https://pkg.go.dev/crypto/rsa#PrivateKey.Sign
+	// privatePEM, err := ioutil.ReadFile("../certs/client_rsa.key")
+	// if err != nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
+	// rblock, _ := pem.Decode(privatePEM)
+	// if rblock == nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
+	// ksigner, err := x509.ParsePKCS1PrivateKey(rblock.Bytes)
+	// if err != nil {
+	// 	fmt.Printf("error getting signer %v", err)
+	// 	os.Exit(0)
+	// }
+
 	// ############## KMS
 
 	// ksigner, err := salkms.NewKMSCrypto(&salkms.KMS{
@@ -75,7 +93,7 @@ func main() {
 	// }
 	// defer cctx.Close()
 
-	// r, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
+	// ksigner, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
 	// 	Context:        cctx,
 	// 	PkcsId:         nil,                 //softhsm
 	// 	PkcsLabel:      []byte("keylabel1"), //softhsm
