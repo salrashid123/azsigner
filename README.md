@@ -44,8 +44,13 @@ import (
 	"os"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/salrashid123/azsigner"
+
+	//"github.com/go-piv/piv-go/piv"
 	salpem "github.com/salrashid123/signer/pem"
 	// salkms "github.com/salrashid123/signer/kms"
+	// saltpm "github.com/salrashid123/signer/tpm"
+	// "github.com/ThalesIgnite/crypto11"
+	// salpkcs "github.com/salrashid123/mtls_pkcs11/signer/pkcs"
 )
 
 const (
@@ -61,18 +66,94 @@ const (
 func main() {
 
 	ctx := context.Background()
-	ksigner, err := salpem.NewPEMCrypto(&salpem.PEM{
+	r, err := salpem.NewPEMCrypto(&salpem.PEM{
 		PrivatePEMFile: "../certs/client_rsa.key",
 	})
 
-	// ksigner, err := salkms.NewKMSCrypto(&salkms.KMS{
+	// ############# KMS
+
+	// r, err := salkms.NewKMSCrypto(&salkms.KMS{
 	// 	ProjectId:          "mineral-minutia-820",
 	// 	LocationId:         "us-central1",
 	// 	KeyRing:            "kr",
 	// 	Key:                "s",
 	// 	KeyVersion:         "1",
-	// 	SignatureAlgorithm: x509.SHA256WithRSA,
 	// })
+
+	// ############# TPM
+
+	// r, err := saltpm.NewTPMCrypto(&saltpm.TPM{
+	// 	TpmDevice:     "/dev/tpm0",
+	// 	TpmHandleFile: "/tmp/key.bin",
+	// 	//TpmHandle:     0x81010002,
+	// })
+
+	// ############# Yubikey
+
+	// cards, err := piv.Cards()
+	// if err != nil {
+	// 	fmt.Printf("unable to open yubikey %v", err)
+	// 	os.Exit(1)
+	// }
+	// var ykey *piv.YubiKey
+	// for _, card := range cards {
+	// 	if strings.Contains(strings.ToLower(card), "yubikey") {
+	// 		if ykey, err = piv.Open(card); err != nil {
+	// 			fmt.Printf("unable to open yubikey %v", err)
+	// 			os.Exit(1)
+	// 		}
+	// 		break
+	// 	}
+	// }
+	// if ykey == nil {
+	// 	fmt.Printf("yubikey not found Please make sure the key is inserted %v", err)
+	// 	os.Exit(1)
+	// }
+	// defer ykey.Close()
+
+	// cert, err := ykey.Certificate(piv.SlotSignature)
+	// if err != nil {
+	// 	fmt.Printf("unable to load certificate not found %v", err)
+	// 	os.Exit(0)
+	// }
+
+	// auth := piv.KeyAuth{PIN: piv.DefaultPIN}
+	// priv, err := ykey.PrivateKey(piv.SlotSignature, cert.PublicKey, auth)
+	// if err != nil {
+	// 	fmt.Printf("unable to load privateKey %v", err)
+	// 	os.Exit(0)
+	// }
+
+	// r, ok := priv.(crypto.Signer)
+	// if !ok {
+	// 	fmt.Printf("expected private key to implement crypto.Signer")
+	// 	os.Exit(0)
+	// }
+
+	// ############# PKCS11
+
+	// export SOFTHSM2_CONF=/path/to/softhsm.conf
+	// config := &crypto11.Config{
+	// 	Path:       "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
+	// 	TokenLabel: "token1",
+	// 	Pin:        "mynewpin",
+	// }
+
+	// cctx, err := crypto11.Configure(config)
+	// if err != nil {
+	// 	fmt.Printf("error creating pkcs11 config%v", err)
+	// 	os.Exit(0)
+	// }
+	// defer cctx.Close()
+
+	// r, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
+	// 	Context:        cctx,
+	// 	PkcsId:         nil,                 //softhsm
+	// 	PkcsLabel:      []byte("keylabel1"), //softhsm
+	// 	PublicCertFile: "client.crt",        //softhsm
+	// })
+
+
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -81,14 +162,13 @@ func main() {
 	localhostCert, err := ioutil.ReadFile("../certs/client.crt")
 	pubBlock, _ := pem.Decode([]byte(localhostCert))
 
-    cert, err := x509.ParseCertificate(pubBlock.Bytes)
-
+	cert, err := x509.ParseCertificate(pubBlock.Bytes)
 
 	cred, err := azsigner.NewSignerCredentials(
 		tenantID,
 		clientID,
 		[]*x509.Certificate{cert},
-		ksigner, nil)
+		r, nil)
 
 	client, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
 
@@ -98,13 +178,4 @@ func main() {
 }
 
 ```
-
-```
-$ openssl x509 -in client.crt -noout -fingerprint
-    SHA1 Fingerprint=EE:57:F7:A0:1B:C2:A1:34:80:BC:59:BA:C9:1D:48:CB:A3:B6:92:41
-$ openssl x509 -in kms_client.crt -noout -fingerprint
-    SHA1 Fingerprint=C1:67:5A:A5:64:A0:A6:21:3B:08:17:08:E4:FA:8C:EE:6E:75:A2:9A
-```
-
----
 

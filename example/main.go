@@ -16,6 +16,9 @@ import (
 
 	salpem "github.com/salrashid123/signer/pem"
 	// salkms "github.com/salrashid123/signer/kms"
+	// saltpm "github.com/salrashid123/signer/tpm"
+	// "github.com/ThalesIgnite/crypto11"
+	// salpkcs "github.com/salrashid123/mtls_pkcs11/signer/pkcs"
 )
 
 const (
@@ -32,9 +35,13 @@ func main() {
 
 	ctx := context.Background()
 
+	// initialize anything that implements RSA crypto.Signer
+
 	ksigner, err := salpem.NewPEMCrypto(&salpem.PEM{
 		PrivatePEMFile: "../certs/client_rsa.key",
 	})
+
+	// ############## KMS
 
 	// ksigner, err := salkms.NewKMSCrypto(&salkms.KMS{
 	// 	ProjectId:          "mineral-minutia-820",
@@ -44,24 +51,43 @@ func main() {
 	// 	KeyVersion:         "1",
 	// 	SignatureAlgorithm: x509.SHA256WithRSA,
 	// })
+
+	// ############## TPM
+
+	// ksigner, err := saltpm.NewTPMCrypto(&saltpm.TPM{
+	// 	TpmDevice:     "/dev/tpm0",
+	// 	TpmHandleFile: "/tmp/key.bin",
+	// 	//TpmHandle:     0x81010002,
+	// })
+
+	// ############## PKCS
+
+	// config := &crypto11.Config{
+	// 	Path:       "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
+	// 	TokenLabel: "token1",
+	// 	Pin:        "mynewpin",
+	// }
+
+	// cctx, err := crypto11.Configure(config)
+	// if err != nil {
+	// 	fmt.Printf("error creating pkcs11 config%v", err)
+	// 	os.Exit(0)
+	// }
+	// defer cctx.Close()
+
+	// r, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
+	// 	Context:        cctx,
+	// 	PkcsId:         nil,                 //softhsm
+	// 	PkcsLabel:      []byte("keylabel1"), //softhsm
+	// 	PublicCertFile: "client.crt",        //softhsm
+	// })
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	// **************************
-	// localhostkey, err := ioutil.ReadFile("../certs/client_rsa.key")
-	// if err != nil {
-	// 	fmt.Printf("Error finding key file: " + err.Error())
-	// 	os.Exit(1)
-	// }
-
-	// block, _ := pem.Decode([]byte(localhostkey))
-	// key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	// if err != nil {
-	// 	fmt.Printf("Error loading private key: " + err.Error())
-	// 	os.Exit(1)
-	// }
 
 	localhostCert, err := ioutil.ReadFile("../certs/client.crt")
 	if err != nil {
@@ -80,7 +106,7 @@ func main() {
 		clientID,
 		[]*x509.Certificate{cert},
 		ksigner, nil)
-	//cred, err := azidentity.NewClientCertificateCredential(tenantID, clientID, []*x509.Certificate{cert}, key, nil)
+
 	if err != nil {
 		fmt.Printf("Error getting vm: " + err.Error())
 		os.Exit(1)
