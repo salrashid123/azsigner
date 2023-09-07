@@ -101,10 +101,10 @@ func main() {
 
 	// ############# TPM
 
+	// k, err := client.LoadCachedKey(rwc, tpmutil.Handle(*persistentHandle), nil)
 	// r, err := saltpm.NewTPMCrypto(&saltpm.TPM{
-	// 	TpmDevice:     "/dev/tpm0",
-	// 	TpmHandleFile: "/tmp/key.bin",
-	// 	//TpmHandle:     0x81010002,
+	//	TpmDevice: rwc,
+	//	Key:       k,
 	// })
 
 	// ############# Yubikey
