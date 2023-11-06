@@ -1,7 +1,9 @@
 
 ## KMS, TPM and HSM based Azure Certificate Credentials 
 
-Azure Credential class that allows you to use HSM, KMS or TPM embedded private keys.  It allows for Azure API access using any golang construct that fulfils the [crypto.Signer](https://pkg.go.dev/crypto#Signer) interface.
+Azure Credential class that allows you to use HSM, KMS or TPM embedded private keys.  
+
+It allows for Azure API access using any golang construct that fulfils the [crypto.Signer](https://pkg.go.dev/crypto#Signer) interface.
 
 [Microsoft identity platform application authentication certificate credentials](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-certificate-credentials) describes how an admin can associate an `x509.Certificate` with an application and then access Azure API using the private key.
 
@@ -17,7 +19,7 @@ There are plenty of other signers around and some unsupported ones can be found 
 
 * [crypto.Signer, implementations for Google Cloud KMS and Trusted Platform Modules](https://github.com/salrashid123/signer)
 
-To use this, first setup an azure application and upload the public x509.  in the example below, i've uploaded the certs provided in this repo
+To use this, first setup an azure application and upload the public x509.  in the example below, i've uploaded the certs provided in this repo (you can use these keys but really, you should generate your own)
 
 ![images/client_cert.png](images/client_cert.png)
 
@@ -32,169 +34,49 @@ However, i've also shown a `crypto.Signer` that uses my KMS key (eg, i have the 
 
 ---
 
+#### Usage
+
+
+see `example/` folder on usage
+
 ```golang
-package main
 
 import (
-	"context"
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
-	"github.com/salrashid123/azsigner"
-
-	//"github.com/go-piv/piv-go/piv"
-	salpem "github.com/salrashid123/signer/pem"
-	// salkms "github.com/salrashid123/signer/kms"
-	// saltpm "github.com/salrashid123/signer/tpm"
-	// "github.com/ThalesIgnite/crypto11"
-	// salpkcs "github.com/salrashid123/mtls_pkcs11/signer/pkcs"
+   	"github.com/salrashid123/azsigner"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"    
 )
 
 const (
-	clientID = "cffeaee2-5617-4784-8a4b-b647efd676d2"
-	audience = "api://AzureADTokenExchange"
-	tenantID = "45243fbe-b73f-4f7d-8213-a104a99e228e"
-
-	subscriptionID = "450b3122-bc25-49b7-86be-7dc86269a2e4"
-	resourceGroup  = "rg1"
-	vmName         = "vm1"
+   	clientID = "yourclientID"
+	containerName  = "yourcontainer"
+	url            = "https://yourstorageaccount.blob.core.windows.net/"
 )
 
 func main() {
-
-	ctx := context.Background()
-	// demo signer
-	r, err := salpem.NewPEMCrypto(&salpem.PEM{
-		PrivatePEMFile: "../certs/client_rsa.key",
-	})
-
-	// // rsa.PrivateKey also implements a crypto.Signer
-	// // https://pkg.go.dev/crypto/rsa#PrivateKey.Sign
-	// privatePEM, err := ioutil.ReadFile("../certs/client_rsa.key")
-	// if err != nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
-	// rblock, _ := pem.Decode(privatePEM)
-	// if rblock == nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
-	// r, err := x509.ParsePKCS1PrivateKey(rblock.Bytes)
-	// if err != nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
-
-	// ############# KMS
-
-	// r, err := salkms.NewKMSCrypto(&salkms.KMS{
-	// 	ProjectId:          "mineral-minutia-820",
-	// 	LocationId:         "us-central1",
-	// 	KeyRing:            "kr",
-	// 	Key:                "s",
-	// 	KeyVersion:         "1",
-	// })
-
-	// ############# TPM
-
-	// k, err := client.LoadCachedKey(rwc, tpmutil.Handle(*persistentHandle), nil)
-	// r, err := saltpm.NewTPMCrypto(&saltpm.TPM{
-	//	TpmDevice: rwc,
-	//	Key:       k,
-	// })
-
-	// ############# Yubikey
-
-	// cards, err := piv.Cards()
-	// if err != nil {
-	// 	fmt.Printf("unable to open yubikey %v", err)
-	// 	os.Exit(1)
-	// }
-	// var ykey *piv.YubiKey
-	// for _, card := range cards {
-	// 	if strings.Contains(strings.ToLower(card), "yubikey") {
-	// 		if ykey, err = piv.Open(card); err != nil {
-	// 			fmt.Printf("unable to open yubikey %v", err)
-	// 			os.Exit(1)
-	// 		}
-	// 		break
-	// 	}
-	// }
-	// if ykey == nil {
-	// 	fmt.Printf("yubikey not found Please make sure the key is inserted %v", err)
-	// 	os.Exit(1)
-	// }
-	// defer ykey.Close()
-
-	// cert, err := ykey.Certificate(piv.SlotSignature)
-	// if err != nil {
-	// 	fmt.Printf("unable to load certificate not found %v", err)
-	// 	os.Exit(0)
-	// }
-
-	// auth := piv.KeyAuth{PIN: piv.DefaultPIN}
-	// priv, err := ykey.PrivateKey(piv.SlotSignature, cert.PublicKey, auth)
-	// if err != nil {
-	// 	fmt.Printf("unable to load privateKey %v", err)
-	// 	os.Exit(0)
-	// }
-
-	// r, ok := priv.(crypto.Signer)
-	// if !ok {
-	// 	fmt.Printf("expected private key to implement crypto.Signer")
-	// 	os.Exit(0)
-	// }
-
-	// ############# PKCS11
-
-	// export SOFTHSM2_CONF=/path/to/softhsm.conf
-	// config := &crypto11.Config{
-	// 	Path:       "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so",
-	// 	TokenLabel: "token1",
-	// 	Pin:        "mynewpin",
-	// }
-
-	// cctx, err := crypto11.Configure(config)
-	// if err != nil {
-	// 	fmt.Printf("error creating pkcs11 config%v", err)
-	// 	os.Exit(0)
-	// }
-	// defer cctx.Close()
-
-	// r, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
-	// 	Context:        cctx,
-	// 	PkcsId:         nil,                 //softhsm
-	// 	PkcsLabel:      []byte("keylabel1"), //softhsm
-	// 	PublicCertFile: "client.crt",        //softhsm
-	// })
-
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	localhostCert, err := ioutil.ReadFile("../certs/client.crt")
-	pubBlock, _ := pem.Decode([]byte(localhostCert))
-
-	cert, err := x509.ParseCertificate(pubBlock.Bytes)
+    ksigner := foo  // <<<<<<<<<< anything that implements crypto.Signer() for RSA
 
 	cred, err := azsigner.NewSignerCredentials(
 		tenantID,
 		clientID,
 		[]*x509.Certificate{cert},
-		r, nil)
+		ksigner, nil)
 
-	client, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	tk, err := cred.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{fmt.Sprintf("api://%s/.default", clientID)},
+	})
 
-	v, err := client.Get(ctx, resourceGroup, vmName, nil)
+	fmt.Printf("Azure token: %s\n", tk.Token)
 
-	fmt.Printf("VM: %s\n", *v.ID)
+	client, err := azblob.NewClient(url, cred, nil)
+
+	pager := client.NewListBlobsFlatPager(containerName, &azblob.ListBlobsFlatOptions{})
+
+	for pager.More() {
+		resp, err := pager.NextPage(context.TODO())
+		for _, blob := range resp.Segment.BlobItems {
+			fmt.Println(*blob.Name)
+		}
+	}
 }
-
 ```
-

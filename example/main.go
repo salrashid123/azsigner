@@ -7,11 +7,11 @@ import (
 
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 
 	"os"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/salrashid123/azsigner"
 
 	salpem "github.com/salrashid123/signer/pem"
@@ -28,15 +28,20 @@ const (
 
 	subscriptionID = "450b3122-bc25-49b7-86be-7dc86269a2e4"
 	resourceGroup  = "rg1"
+	containerName  = "yourcontainer"
+	url            = "https://yourstorageaccount.blob.core.windows.net/"
 	vmName         = "vm1"
 )
 
 func main() {
 
-	ctx := context.Background()
+	//ctx := context.Background()
 
 	// initialize anything that implements RSA crypto.Signer
 
+	// use a different keypair!
+	// key should be -----BEGIN RSA PRIVATE KEY-----
+	//  openssl rsa -in client.key -out client_rsa.key -traditional
 	ksigner, err := salpem.NewPEMCrypto(&salpem.PEM{
 		PrivatePEMFile: "../certs/client_rsa.key",
 	})
@@ -72,10 +77,10 @@ func main() {
 
 	// ############## TPM
 
+	// k, err := client.LoadCachedKey(rwc, tpmutil.Handle(*persistentHandle), nil)
 	// ksigner, err := saltpm.NewTPMCrypto(&saltpm.TPM{
-	// 	TpmDevice:     "/dev/tpm0",
-	// 	TpmHandleFile: "/tmp/key.bin",
-	// 	//TpmHandle:     0x81010002,
+	//	TpmDevice: rwc,
+	//	Key:       k,
 	// })
 
 	// ############## PKCS
@@ -107,7 +112,8 @@ func main() {
 
 	// **************************
 
-	localhostCert, err := ioutil.ReadFile("../certs/client.crt")
+	// your cert will be different!
+	localhostCert, err := os.ReadFile("../certs/client.crt")
 	if err != nil {
 		fmt.Printf("Error getting vm: " + err.Error())
 		os.Exit(1)
@@ -129,18 +135,47 @@ func main() {
 		fmt.Printf("Error getting vm: " + err.Error())
 		os.Exit(1)
 	}
-	client, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	tk, err := cred.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{fmt.Sprintf("api://%s/.default", clientID)},
+	})
 	if err != nil {
-		fmt.Printf("Invalid NewVirtualMachinesClient client error: " + err.Error())
+		fmt.Printf("Error getting token: " + err.Error())
 		os.Exit(1)
 	}
 
-	v, err := client.Get(ctx, resourceGroup, vmName, nil)
+	fmt.Printf("Azure token: %s\n", tk.Token)
+
+	// armclient, err := armcompute.NewVirtualMachinesClient(subscriptionID, cred, nil)
+	// if err != nil {
+	// 	fmt.Printf("Invalid NewVirtualMachinesClient client error: " + err.Error())
+	// 	os.Exit(1)
+	// }
+	// v, err := armclient.Get(context.Background(), resourceGroup, vmName, nil)
+	// if err != nil {
+	// 	fmt.Printf("Error getting vm: " + err.Error())
+	// 	os.Exit(1)
+	// }
+
+	// fmt.Printf("VM: %s\n", *v.ID)
+
+	client, err := azblob.NewClient(url, cred, nil)
 	if err != nil {
-		fmt.Printf("Error getting vm: " + err.Error())
+		fmt.Printf("Error creating client: " + err.Error())
 		os.Exit(1)
 	}
+	pager := client.NewListBlobsFlatPager(containerName, &azblob.ListBlobsFlatOptions{})
 
-	fmt.Printf("VM: %s\n", *v.ID)
+	fmt.Println("-----------------------")
+	fmt.Println("Objects:")
+	for pager.More() {
+		resp, err := pager.NextPage(context.TODO())
+		if err != nil {
+			fmt.Printf("Error iterating objects " + err.Error())
+			os.Exit(1)
+		}
+		for _, blob := range resp.Segment.BlobItems {
+			fmt.Println(*blob.Name)
+		}
+	}
 
 }

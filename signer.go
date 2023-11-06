@@ -12,10 +12,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -72,6 +73,10 @@ func NewSignerCredentials(tenantID string, clientID string, certs []*x509.Certif
 
 func (c *SignerCredential) GetToken(ctx context.Context, opts policy.TokenRequestOptions) (azcore.AccessToken, error) {
 
+	if len(opts.Scopes) == 0 {
+		return azcore.AccessToken{}, fmt.Errorf("Scopes cannot be empty")
+	}
+
 	// https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/main/apps/internal/oauth/ops/accesstokens/accesstokens.go#L112
 	token := jwt.NewWithClaims(yk.SigningMethodSignerRS256, jwt.MapClaims{
 		"aud": fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", c.tenantID),
@@ -104,7 +109,7 @@ func (c *SignerCredential) GetToken(ctx context.Context, opts policy.TokenReques
 	stsClient := &http.Client{}
 	form := url.Values{}
 	form.Add("grant_type", "client_credentials")
-	form.Add("scope", opts.Scopes[0])
+	form.Add("scope", fmt.Sprintf(strings.Join(opts.Scopes[:], ",")))
 	form.Add("client_id", c.clientID)
 	form.Add("client_assertion", tokenString)
 	form.Add("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
@@ -116,14 +121,14 @@ func (c *SignerCredential) GetToken(ctx context.Context, opts policy.TokenReques
 	defer stsResp.Body.Close()
 
 	if stsResp.StatusCode != http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(stsResp.Body)
+		bodyBytes, err := io.ReadAll(stsResp.Body)
 		if err != nil {
 			return azcore.AccessToken{}, err
 		}
 		return azcore.AccessToken{}, fmt.Errorf("error reading sts response from azure status %d   %s", stsResp.StatusCode, string(bodyBytes))
 	}
 
-	body, err := ioutil.ReadAll(stsResp.Body)
+	body, err := io.ReadAll(stsResp.Body)
 	if err != nil {
 		return azcore.AccessToken{}, err
 	}
