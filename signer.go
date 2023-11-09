@@ -140,7 +140,7 @@ func (c *SignerCredential) GetToken(ctx context.Context, opts policy.TokenReques
 
 	return azcore.AccessToken{
 		Token:     result.AccessToken,
-		ExpiresOn: time.Unix(result.ExpiresIn, 0),
+		ExpiresOn: time.Now().Add(time.Second * time.Duration(result.ExpiresIn)).UTC(),
 	}, nil
 }
 
