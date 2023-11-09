@@ -62,6 +62,7 @@ func main() {
 		[]*x509.Certificate{cert},
 		ksigner, nil)
 
+    // print the default token
 	tk, err := cred.GetToken(context.Background(), policy.TokenRequestOptions{
 		Scopes: []string{fmt.Sprintf("api://%s/.default", clientID)},
 	})
@@ -79,4 +80,54 @@ func main() {
 		}
 	}
 }
+```
+
+If you want to acquire an Azure access token for a specific service (like storage), set the scope appropriately:
+
+
+```golang
+	tk, err := cred.GetToken(context.Background(), policy.TokenRequestOptions{
+		Scopes: []string{fmt.Sprintf("https://storage.azure.com/.default")},
+	})
+```
+
+then use the token with curl:
+
+```bash
+$ export STORAGE_ACCOUnt=foo
+$ export CONTAINER=bar
+$ curl -s --oauth2-bearer "$AZURE_TOKEN"  -H 'x-ms-version: 2017-11-09'  \
+     "https://$STORAGE_ACCOUnt.blob.core.windows.net/$CONTAINER?restype=container&comp=list" | xmllint -  --format
+```
+
+gives:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<EnumerationResults ServiceEndpoint="https://STORAGE_ACCOUnt.blob.core.windows.net/" ContainerName="CONTAINER">
+  <Blobs>
+    <Blob>
+      <Name>oven.md</Name>
+      <Properties>
+        <Creation-Time>Mon, 06 Nov 2023 13:25:44 GMT</Creation-Time>
+        <Last-Modified>Mon, 06 Nov 2023 13:25:44 GMT</Last-Modified>
+        <Etag>0x8DBDECBE18E95C5</Etag>
+        <Content-Length>20</Content-Length>
+        <Content-Type>text/markdown</Content-Type>
+        <Content-Encoding/>
+        <Content-Language/>
+        <Content-MD5>leKLDEo6v5/3w0eVrpnV6w==</Content-MD5>
+        <Cache-Control/>
+        <Content-Disposition/>
+        <BlobType>BlockBlob</BlobType>
+        <AccessTier>Hot</AccessTier>
+        <AccessTierInferred>true</AccessTierInferred>
+        <LeaseStatus>unlocked</LeaseStatus>
+        <LeaseState>available</LeaseState>
+        <ServerEncrypted>true</ServerEncrypted>
+      </Properties>
+    </Blob>
+  </Blobs>
+  <NextMarker/>
+</EnumerationResults>
 ```
