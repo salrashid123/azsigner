@@ -13,8 +13,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/salrashid123/azsigner"
-
-	salpem "github.com/salrashid123/signer/pem"
 	// salkms "github.com/salrashid123/signer/kms"
 	// saltpm "github.com/salrashid123/signer/tpm"
 	// "github.com/ThalesIgnite/crypto11"
@@ -42,27 +40,24 @@ func main() {
 	// use a different keypair!
 	// key should be -----BEGIN RSA PRIVATE KEY-----
 	//  openssl rsa -in client.key -out client_rsa.key -traditional
-	ksigner, err := salpem.NewPEMCrypto(&salpem.PEM{
-		PrivatePEMFile: "../certs/client_rsa.key",
-	})
 
 	// // rsa.PrivateKey also implements a crypto.Signer
 	// // https://pkg.go.dev/crypto/rsa#PrivateKey.Sign
-	// privatePEM, err := ioutil.ReadFile("../certs/client_rsa.key")
-	// if err != nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
-	// rblock, _ := pem.Decode(privatePEM)
-	// if rblock == nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
-	// ksigner, err := x509.ParsePKCS1PrivateKey(rblock.Bytes)
-	// if err != nil {
-	// 	fmt.Printf("error getting signer %v", err)
-	// 	os.Exit(0)
-	// }
+	privatePEM, err := os.ReadFile("../certs/client_rsa.key")
+	if err != nil {
+		fmt.Printf("error getting signer %v", err)
+		os.Exit(0)
+	}
+	rblock, _ := pem.Decode(privatePEM)
+	if rblock == nil {
+		fmt.Printf("error getting signer %v", err)
+		os.Exit(0)
+	}
+	ksigner, err := x509.ParsePKCS1PrivateKey(rblock.Bytes)
+	if err != nil {
+		fmt.Printf("error getting signer %v", err)
+		os.Exit(0)
+	}
 
 	// ############## KMS
 
