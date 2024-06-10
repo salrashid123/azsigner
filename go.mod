@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
-	github.com/salrashid123/golang-jwt-signer v0.2.0
+	github.com/salrashid123/golang-jwt-signer v0.3.0
 
 )
 

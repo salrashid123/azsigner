@@ -10,6 +10,8 @@ github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/salrashid123/golang-jwt-signer v0.2.0 h1:WLeOgnue8lpRK95dLPs5ZxfAIaIl9ovX3bVXL3oNL5k=
 github.com/salrashid123/golang-jwt-signer v0.2.0/go.mod h1:+SiGKwJc2/WXEgZVWxdHIAW5hn4MO5ezSsJOTfWdlyw=
+github.com/salrashid123/golang-jwt-signer v0.3.0 h1:0PkBe+1vGTiE+sOMe7mcL08+qf90P6YAMpYuPSda1nQ=
+github.com/salrashid123/golang-jwt-signer v0.3.0/go.mod h1:+SiGKwJc2/WXEgZVWxdHIAW5hn4MO5ezSsJOTfWdlyw=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 golang.org/x/net v0.24.0 h1:1PcaxkF854Fu3+lvBIx5SYn9wRlBzzcnHZSiaFFAb0w=
 golang.org/x/net v0.24.0/go.mod h1:2Q7sJY5mzlzWjKtYUEXSlBWCdyaioyXzRB2RtU8KVE8=

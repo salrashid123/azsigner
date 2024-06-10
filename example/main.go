@@ -31,18 +31,30 @@ const (
 	vmName         = "vm1"
 )
 
+// var TPMDEVICES = []string{"/dev/tpm0", "/dev/tpmrm0"}
+
+// func OpenTPM(path string) (io.ReadWriteCloser, error) {
+// 	if slices.Contains(TPMDEVICES, path) {
+// 		return tpmutil.OpenTPM(path)
+// 	} else if path == "simulator" {
+// 		return simulator.GetWithFixedSeedInsecure(1073741825)
+// 	} else {
+// 		return net.Dial("tcp", path)
+// 	}
+// }
+
 func main() {
 
 	//ctx := context.Background()
 
 	// initialize anything that implements RSA crypto.Signer
 
-	// use a different keypair!
-	// key should be -----BEGIN RSA PRIVATE KEY-----
-	//  openssl rsa -in client.key -out client_rsa.key -traditional
-
 	// // rsa.PrivateKey also implements a crypto.Signer
 	// // https://pkg.go.dev/crypto/rsa#PrivateKey.Sign
+
+	// use a different keypair!
+	//  openssl rsa -in client.key -out client_rsa.key -traditional
+
 	privatePEM, err := os.ReadFile("../certs/client_rsa.key")
 	if err != nil {
 		fmt.Printf("error getting signer %v", err)
@@ -72,10 +84,46 @@ func main() {
 
 	// ############## TPM
 
-	// k, err := client.LoadCachedKey(rwc, tpmutil.Handle(*persistentHandle), nil)
+	// ### using go-tpm-tools
+	// "github.com/google/go-tpm-tools/client"
+	// "github.com/google/go-tpm-tools/simulator"
+	// "github.com/google/go-tpm/tpmutil"
+
+	// rwc, err := OpenTPM("127.0.0.1:2321")
+	// if err != nil {
+	// 	fmt.Printf("can't open TPM: %v", err)
+	// 	return
+	// }
+	// defer func() {
+	// 	if err := rwc.Close(); err != nil {
+	// 		fmt.Printf("can't close TPM: %v", err)
+	// 	}
+	// }()
+
+	// k, err := client.LoadCachedKey(rwc, tpmutil.Handle(0x81010002), nil)
+	// if err != nil {
+	// 	fmt.Printf("can't get key: %v", err)
+	// 	return
+	// }
+	// ksigner, err := k.GetSigner()
+	// if err != nil {
+	// 	fmt.Printf("can't get signer: %v", err)
+	// 	return
+	// }
+
+	//  using salrashid123/signer/tpm Signer
+
+	// rwr := transport.FromReadWriter(rwc)
+	// pub, err := tpm2.ReadPublic{
+	// 	ObjectHandle: tpm2.TPMHandle(0x81010002),
+	// }.Execute(rwr)
+
 	// ksigner, err := saltpm.NewTPMCrypto(&saltpm.TPM{
-	//	TpmDevice: rwc,
-	//	Key:       k,
+	// 	TpmDevice: rwc,
+	// 	NamedHandle: &tpm2.NamedHandle{
+	// 		Handle: tpm2.TPMHandle(0x81010002),
+	// 		Name:   pub.Name,
+	// 	},
 	// })
 
 	// ############## PKCS
@@ -88,22 +136,20 @@ func main() {
 
 	// cctx, err := crypto11.Configure(config)
 	// if err != nil {
-	// 	fmt.Printf("error creating pkcs11 config%v", err)
-	// 	os.Exit(0)
+	// 	fmt.Println(err)
+	// 	return
 	// }
 	// defer cctx.Close()
 
 	// ksigner, err := salpkcs.NewPKCSCrypto(&salpkcs.PKCS{
-	// 	Context:        cctx,
-	// 	PkcsId:         nil,                 //softhsm
-	// 	PkcsLabel:      []byte("keylabel1"), //softhsm
-	// 	PublicCertFile: "client.crt",        //softhsm
+	// 	Context:   cctx,
+	// 	PkcsId:    nil,                 //softhsm
+	// 	PkcsLabel: []byte("keylabel1"), //softhsm
 	// })
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
 
 	// **************************
 

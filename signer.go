@@ -15,7 +15,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -78,25 +77,20 @@ func (c *SignerCredential) GetToken(ctx context.Context, opts policy.TokenReques
 	}
 
 	// https://github.com/AzureAD/microsoft-authentication-library-for-go/blob/main/apps/internal/oauth/ops/accesstokens/accesstokens.go#L112
-	token := jwt.NewWithClaims(yk.SigningMethodSignerRS256, jwt.MapClaims{
-		"aud": fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", c.tenantID),
-		"exp": json.Number(strconv.FormatInt(time.Now().Add(10*time.Minute).Unix(), 10)),
-		"iss": c.clientID,
-		"jti": uuid.New().String(),
-		"nbf": json.Number(strconv.FormatInt(time.Now().Unix(), 10)),
-		"sub": c.clientID,
+	token := jwt.NewWithClaims(yk.SigningMethodSignerRS256, jwt.RegisteredClaims{
+		Audience:  jwt.ClaimStrings([]string{fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", c.tenantID)}),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
+		Issuer:    c.clientID,
+		ID:        uuid.New().String(),
+		NotBefore: jwt.NewNumericDate(time.Now()),
+		Subject:   c.clientID,
 	})
-	token.Header = map[string]interface{}{
-		"alg": "RS256",
-		"typ": "JWT",
-		"x5t": base64.StdEncoding.EncodeToString(thumbprint(c.certs[0])),
-	}
+	token.Header["x5t"] = base64.StdEncoding.EncodeToString(thumbprint(c.certs[0]))
 
 	keyctx, err := yk.NewSignerContext(ctx, &yk.SignerConfig{
 		Signer: c.key,
 	})
 	if err != nil {
-		fmt.Printf("Unable to initialize signer:  %v\n", err)
 		return azcore.AccessToken{}, err
 	}
 
